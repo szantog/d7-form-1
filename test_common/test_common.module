@@ -1,11 +1,11 @@
 <?php
-// $id$
 /**
 * $file
 * Függvénykönyvtár
 *
 *  * (C) Bereczky Péter 2011
 */
+
 /*
 *
 * Megadott csoportnévhez tartozó Drupal csoportnevet adja
@@ -21,9 +21,10 @@ function _test_get_drupal_role($role) {
   db_set_active('default');
   return $result;
 }
+
 /**
 * Jogosultságellenőrzés
-* Bemenő paraméter a $user objektum, és a $roles tömb. 
+* Bemenő paraméter a $user objektum, és a $roles tömb.
 * $roles egy tömb, melyben a cust_roles táblában lévő csoport megnevezések vannak (pl. 'USER', vagy "RESELLER")
 * Olyan hosszú stringet ad vissza, ahány $roles paraméter meg volt adva. A $roles tömbben szereplő megnevezések sorrendjében értékelődik ki.
 * Amelyik jogosultság érvényes (csoporttag a bejelentkezett felhasználó), abban a pozícióban 1-et tesz a visszaadott stringbe.
@@ -44,6 +45,7 @@ function _test_get_roles($user, $roles) {
   }
   return $result;
 }
+
 /*
 *
 * Megadott felhasználó ügyfélszáma a cust táblából a bejelentkező neve alapján
@@ -55,12 +57,13 @@ function _test_get_uid($login_name) {
   $uid = 0;
   if (strlen($login_name) > 0) {
     db_set_active('phone');
-    $uid = db_query("SELECT cust_id FROM {cust} WHERE login_name = :login_name", 
+    $uid = db_query("SELECT cust_id FROM {cust} WHERE login_name = :login_name",
       array(':login_name' => $login_name))->fetchField();
     db_set_active('default');
   }
   return $uid;
 }
+
 /*
 *
 * Megadott felhasználó típusa a cust táblából a bejelentkező neve alapján
@@ -72,12 +75,13 @@ function _test_get_customer_type($login_name) {
   $type = 0;
   if (strlen($login_name) > 0) {
     db_set_active('phone');
-    $type = db_query("SELECT type FROM {cust} WHERE $login_name = :$login_name", 
+    $type = db_query("SELECT type FROM {cust} WHERE $login_name = :$login_name",
       array(':$login_name' => $$login_name))->fetchField();
     db_set_active('default');
   }
   return $type;
 }
+
 /*
 *
 * Megadott felhasználó létezése a cust táblában (rekordok száma,
@@ -89,11 +93,12 @@ function _test_get_customer_type($login_name) {
 function _test_get_customers_count($login_name) {
   $count = 0;
   db_set_active('phone');
-  $count = db_query("SELECT COUNT(*) FROM {cust} WHERE login_name = :login_name", 
+  $count = db_query("SELECT COUNT(*) FROM {cust} WHERE login_name = :login_name",
     array(':login_name' => $login_name))->fetchField();
   db_set_active('default');
   return $count;
 }
+
 /*
  *
  * Megadott felhasználó neve a cust táblában a bejelentkező neve alapján
@@ -102,11 +107,12 @@ function _test_get_customers_count($login_name) {
 function _test_get_customers_name($login_name) {
   $name = '';
   db_set_active('phone');
-  $name = db_query("SELECT name FROM {cust} WHERE login_name = :login_name", 
+  $name = db_query("SELECT name FROM {cust} WHERE login_name = :login_name",
     array(':login_name' => $login_name))->fetchField();
   db_set_active('default');
   return $name;
 }
+
 //   -------------------      FORM BEVITEL ELLENŐRZÉS       --------------
 /**
 /**
@@ -119,6 +125,7 @@ function _test_email_validate($element, $form_state) {
     }
   }
 }
+
 /**
 * név ellenőrzése
 */
@@ -129,6 +136,7 @@ function _test_name_validate($element, $form_state) {
     }
   }
 }
+
 /**
 * login_name, azaz bejelentkező név ellenőrzése
 */
@@ -136,11 +144,11 @@ function _test_login_name_validate($element, $form_state) {
   if (! empty($element['#value'])) {
     // Ellenőrzés a cust táblában
     db_set_active('phone');
-    $cust_num = db_query("SELECT COUNT(*) FROM {cust} WHERE login_name = :login_name", 
+    $cust_num = db_query("SELECT COUNT(*) FROM {cust} WHERE login_name = :login_name",
       array(':login_name' => $element['#value']))->fetchField();
     db_set_active('default');
     // ellenőrzés a Drupal users táblában
-    $users_num = db_query("SELECT COUNT(*) FROM {users} WHERE name = :name", 
+    $users_num = db_query("SELECT COUNT(*) FROM {users} WHERE name = :name",
       array(':name' => $element['#value']))->fetchField();
     // A bejelentkező név csak betűket, számjegyeket és kötőjelet tartalmazhat
     if ($cust_num + $users_num == 0) {
@@ -152,6 +160,7 @@ function _test_login_name_validate($element, $form_state) {
     }
   }
 }
+
 /**
 * Bejelentkező jelszó ellenőrzése
 */
@@ -168,7 +177,7 @@ function _test_password_validate($element, $form_state) {
 /**
  * Dátumstring (ÉÉÉÉ-HH-NN) ellenőrzése
  *
- * 
+ *
  */
 function _test_date_validate($element, $form_state) {
   if (! empty($element['#value'])) {
@@ -177,6 +186,7 @@ function _test_date_validate($element, $form_state) {
     }
   }
 }
+
 /**
 * Csak számjegyeket tartalmazó mező ellenőrzése
 */
@@ -187,6 +197,7 @@ function _test_number_validate($element, $form_state) {
     }
   }
 }
+
 /**
 * Megjegyzés mező ellenőrzése
 */
@@ -197,6 +208,7 @@ function _test_remark_validate($element, $form_state) {
     }
   }
 }
+
 //         ------------------- AZONOSÍTÓ GENERÁLÁS -------------------
 /*
  *
@@ -225,7 +237,7 @@ function _test_trid_gen($mode) {
       }
       // ellenőrzés az adatbázisban, hogy volt-e már ilyen trid
       db_set_active('phone');
-      if (db_query("SELECT COUNT(*) FROM {" . $database_table . "} WHERE trid = :trid", 
+      if (db_query("SELECT COUNT(*) FROM {" . $database_table . "} WHERE trid = :trid",
         array(':trid' => $element['#value']))->fetchField() == 0) {
         $trid_use = false;
       }
@@ -234,6 +246,7 @@ function _test_trid_gen($mode) {
   }
   return $gen_trid;
 }
+
 /**
  * Jelszó generálás
  */

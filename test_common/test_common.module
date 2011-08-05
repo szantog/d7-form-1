@@ -1,0 +1,250 @@
+<?php
+// $id$
+/**
+* $file
+* Függvénykönyvtár
+*
+*  * (C) Bereczky Péter 2011
+*/
+/*
+*
+* Megadott csoportnévhez tartozó Drupal csoportnevet adja
+* $role a csoport megnevezés, példánkban "USER" vagy "RESELLER"
+* Visszaadott érték: A hozzátartozó Drupal csoport neve.
+* Mellékhatás:
+* db_set_active('default');
+*
+*/
+function _test_get_drupal_role($role) {
+  db_set_active('phone');
+  $result = db_query("SELECT role_role FROM {cust_roles} WHERE role_name = :role_name", array(':role_name' => $role))->fetchField();
+  db_set_active('default');
+  return $result;
+}
+/**
+* Jogosultságellenőrzés
+* Bemenő paraméter a $user objektum, és a $roles tömb. 
+* $roles egy tömb, melyben a cust_roles táblában lévő csoport megnevezések vannak (pl. 'USER', vagy "RESELLER")
+* Olyan hosszú stringet ad vissza, ahány $roles paraméter meg volt adva. A $roles tömbben szereplő megnevezések sorrendjében értékelődik ki.
+* Amelyik jogosultság érvényes (csoporttag a bejelentkezett felhasználó), abban a pozícióban 1-et tesz a visszaadott stringbe.
+* Amely érvénytelen, azon a pozíción nulla lesz a visszaadott stringben.
+* Mellékhatás:
+* db_set_active('default');
+*/
+function _test_get_roles($user, $roles) {
+  $result = '';
+  foreach ($roles as $role_param)
+  if ($role_param != '') {
+    $role = _test_get_drupal_role($role_param);
+    if (is_array($user->roles) && in_array($role, array_values($user->roles))) {
+      $result .= '1';
+    } else {
+      $result .= '0';
+    }
+  }
+  return $result;
+}
+/*
+*
+* Megadott felhasználó ügyfélszáma a cust táblából a bejelentkező neve alapján
+*
+* Mellékhatás:
+* db_set_active('default');
+*/
+function _test_get_uid($login_name) {
+  $uid = 0;
+  if (strlen($login_name) > 0) {
+    db_set_active('phone');
+    $uid = db_query("SELECT cust_id FROM {cust} WHERE login_name = :login_name", 
+      array(':login_name' => $login_name))->fetchField();
+    db_set_active('default');
+  }
+  return $uid;
+}
+/*
+*
+* Megadott felhasználó típusa a cust táblából a bejelentkező neve alapján
+*
+* Mellékhatás:
+* db_set_active('default');
+*/
+function _test_get_customer_type($login_name) {
+  $type = 0;
+  if (strlen($login_name) > 0) {
+    db_set_active('phone');
+    $type = db_query("SELECT type FROM {cust} WHERE $login_name = :$login_name", 
+      array(':$login_name' => $$login_name))->fetchField();
+    db_set_active('default');
+  }
+  return $type;
+}
+/*
+*
+* Megadott felhasználó létezése a cust táblában (rekordok száma,
+* ami normálisan csak egy lehet)
+*
+* Mellékhatás:
+* db_set_active('default');
+*/
+function _test_get_customers_count($login_name) {
+  $count = 0;
+  db_set_active('phone');
+  $count = db_query("SELECT COUNT(*) FROM {cust} WHERE login_name = :login_name", 
+    array(':login_name' => $login_name))->fetchField();
+  db_set_active('default');
+  return $count;
+}
+/*
+ *
+ * Megadott felhasználó neve a cust táblában a bejelentkező neve alapján
+ *
+*/
+function _test_get_customers_name($login_name) {
+  $name = '';
+  db_set_active('phone');
+  $name = db_query("SELECT name FROM {cust} WHERE login_name = :login_name", 
+    array(':login_name' => $login_name))->fetchField();
+  db_set_active('default');
+  return $name;
+}
+//   -------------------      FORM BEVITEL ELLENŐRZÉS       --------------
+/**
+/**
+* E-mail cím ellenőrzése
+*/
+function _test_email_validate($element, $form_state) {
+  if (! empty($element['#value'])) {
+    if (! valid_email_address($element['#value'])) {
+      form_error($element, 'Az e-mail cím hibás!');
+    }
+  }
+}
+/**
+* név ellenőrzése
+*/
+function _test_name_validate($element, $form_state) {
+  if (! empty($element['#value'])) {
+  	if (! preg_match('(^[0-9a-zA-Z-öüóőúéáűíÖÜÓŐÚÉÁŰÍ\.\s]+$)', $element['#value'])) {
+  		form_error($element, 'A név mező nem megengedett karaktert tartalmaz!');
+    }
+  }
+}
+/**
+* login_name, azaz bejelentkező név ellenőrzése
+*/
+function _test_login_name_validate($element, $form_state) {
+  if (! empty($element['#value'])) {
+    // Ellenőrzés a cust táblában
+    db_set_active('phone');
+    $cust_num = db_query("SELECT COUNT(*) FROM {cust} WHERE login_name = :login_name", 
+      array(':login_name' => $element['#value']))->fetchField();
+    db_set_active('default');
+    // ellenőrzés a Drupal users táblában
+    $users_num = db_query("SELECT COUNT(*) FROM {users} WHERE name = :name", 
+      array(':name' => $element['#value']))->fetchField();
+    // A bejelentkező név csak betűket, számjegyeket és kötőjelet tartalmazhat
+    if ($cust_num + $users_num == 0) {
+      if (! preg_match('(^[0-9a-zA-Z-]+$)', $element['#value'])) {
+        form_error($element, 'A bejelentkező név nem megengedett karaktert tartalmaz!');
+      }
+    } else {
+      form_error($element, 'Ilyen bejelentkező név már létezik.');
+    }
+  }
+}
+/**
+* Bejelentkező jelszó ellenőrzése
+*/
+function _test_password_validate($element, $form_state) {
+  if (! empty($element['#value'])) {
+    if (! preg_match('(^[0-9a-zA-Z-&@?:.$+!#]+$)', $element['#value'])) {
+      form_error($element, 'A jelszó nem megengedett karaktert tartalmaz!');
+    }
+    if (strlen($element['#value']) < 8) {
+      form_error($element, 'A jelszó minimális hossza 8 karakter.');
+    }
+  }
+}
+/**
+ * Dátumstring (ÉÉÉÉ-HH-NN) ellenőrzése
+ *
+ * 
+ */
+function _test_date_validate($element, $form_state) {
+  if (! empty($element['#value'])) {
+	  if (! preg_match('(^[0-9-]+$)', $element['#value'])) {
+		  form_error($element, 'A dátum nem megengedett karaktert tartalmaz!');
+    }
+  }
+}
+/**
+* Csak számjegyeket tartalmazó mező ellenőrzése
+*/
+function _test_number_validate($element, $form_state) {
+  if (! empty($element['#value'])) {
+	  if (! preg_match('(^[0-9]+$)', $element['#value'])) {
+		  form_error($element, 'A mező nem megengedett karaktert tartalmaz!');
+    }
+  }
+}
+/**
+* Megjegyzés mező ellenőrzése
+*/
+function _test_remark_validate($element, $form_state) {
+  if (! empty($element['#value'])) {
+    if (! preg_match('(^[\w\.\'öüóőúéáűíÖÜÓŐÚÉÁŰÍ!?:\s-,0-9/]+$)', $element['#value'])) {
+      form_error($element, 'A megjegyzés mező nem megengedett karaktert tartalmaz!');
+    }
+  }
+}
+//         ------------------- AZONOSÍTÓ GENERÁLÁS -------------------
+/*
+ *
+ * Azonosító generálása
+ *
+ * Mellékhatás:
+ * db_set_active('default');
+*/
+function _test_trid_gen($mode) {
+  // Egyedi véletlenszámot generál számjegyek felhasználásával
+  // A trid hossza 16 karakter.
+  // A $mode paraméter azt vezérli, hogy mely táblában legyen egyedi a trid
+  // jelenleg csak egy ilyen tábla van, de elvileg lehetne több is.
+  $database = '';
+  if ($mode == 1) {
+    $database_table = 'cust';
+  }
+  $gen_trid = "";
+  $trid_use = true;
+  // Amíg nem lesz egyedi
+  if ($database != '') {
+    while ($trid_use) {
+      $gen_trid = "";
+      while (strlen($gen_trid) < 16) {
+        $gen_trid .= chr(mt_rand(48,57));
+      }
+      // ellenőrzés az adatbázisban, hogy volt-e már ilyen trid
+      db_set_active('phone');
+      if (db_query("SELECT COUNT(*) FROM {" . $database_table . "} WHERE trid = :trid", 
+        array(':trid' => $element['#value']))->fetchField() == 0) {
+        $trid_use = false;
+      }
+      db_set_active('default');
+    }
+  }
+  return $gen_trid;
+}
+/**
+ * Jelszó generálás
+ */
+function _test_pw_gen($lenght = 10) {
+  $key = "";
+  $chars = "abcdefghijklmnopqrsvwxyz1234567890ABCDEFGHIJKLMNOPQRSVWXYZ";
+  for($i = 0; $i < $lenght; $i++) {
+    $index = rand(0, strlen($chars) - 1);
+    $char = substr($chars, $index, 1);
+    $key .= $char;
+  }
+  return $key;
+}
+

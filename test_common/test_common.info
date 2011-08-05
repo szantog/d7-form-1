@@ -1,0 +1,7 @@
+
+; $Id$
+name = "test_common"
+description = "Függvénykönyvtár a teszt modulok részére"
+package = "test"
+core = 7.x
+
